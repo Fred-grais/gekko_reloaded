@@ -2,13 +2,14 @@ var log = require('../../core/log');
 var _ = require('underscore');
 
 var Indicator = function(settings) {
-  this.history = [];
+  this.currentHistory = [];
   this.currentPivotHigh = null;
   this.currentPivotLow = null;
 
   this.candlesBeforePivot = settings.candlesBeforePivot;
   this.candlesAfterPivot = settings.candlesAfterPivot;
-  this.minimumHistoryNeeded = this.candlesBeforePivot + this.candlesAfterPivot;
+  // Need to add 1 to include the pivot point itself
+  this.minimumHistoryNeeded = this.candlesBeforePivot + this.candlesAfterPivot + 1;
   
   this.age = 0;
 
@@ -16,9 +17,9 @@ var Indicator = function(settings) {
 }
 
 Indicator.prototype.update = function(candle) {
-  this.history.push({high: candle.high, low: candle.low});
-  if(this.history.length > this.minimumHistoryNeeded) {
-    this.history.shift();
+  this.currentHistory.push({high: candle.high, low: candle.low});
+  if(this.currentHistory.length > this.minimumHistoryNeeded) {
+    this.currentHistory.shift();
   } 
 
   this.age++;
@@ -32,19 +33,27 @@ Indicator.prototype.update = function(candle) {
 Indicator.prototype.calculate = function() {
   // If 3 candles before Pivot we will studied the 4th element in the array and check if it is a max/min in the array to determine if it is a Pivot high / low
   // So if we have a candlesBeforePivot set to 3, we will need to study the 4th element of the array, which is located at the index 3
-  var studiedCandle = this.history[this.candlesBeforePivot];
+  var studiedCandle = this.currentHistory[this.candlesBeforePivot];
 
-  var currentHistoryMaxHigh = _.max(this.history, function(candle) { return candle.high; });
-  var currentHistoryMinLow = _.min(this.history, function(candle) { return candle.low; });
-  
-  var isPivotHigh = studiedCandle.high >= currentHistoryMaxHigh;
-  var isPivotLow = studiedCandle.low <= currentHistoryMinLow;
+  var currentHistoryMaxHigh = _.max(this.currentHistory, function(candle) { return candle.high; });
+  var currentHistoryMinLow = _.min(this.currentHistory, function(candle) { return candle.low; });
 
-  var result = {isPivotHigh: isPivotHigh, isPivotLow: isPivotLow};
+  var isPivotHigh = false;
+  var isPivotLow = false;
 
-  log.write('Calculated Pivot high/low data for history:');
-  log.write('\t', this.history);
-  log.write('\t', result)
+  if(currentHistoryMaxHigh) {
+    isPivotHigh = studiedCandle.high >= currentHistoryMaxHigh.high;
+  }
+
+  if(currentHistoryMinLow) {
+    isPivotLow = studiedCandle.low <= currentHistoryMinLow.low;
+  }
+
+  var result = {isPivotHigh: isPivotHigh, pivotHighValue: studiedCandle.high, isPivotLow: isPivotLow, pivotLowValue: studiedCandle.low};
+
+  console.log('Calculated Pivot high/low data for history:');
+  console.log('\t', this.currentHistory);
+  //console.log('\t', result)
 
   this.result = result;
 }

@@ -188,7 +188,7 @@ var roundAmount = function(amount) {
   return amount;
 };
 
-Trader.prototype.addOrder = function(tradeType, amount, price, callback) {
+Trader.prototype.addOrder = function(tradeType, amount, orderType, price, price2, callback) {
   amount = roundAmount(amount);
   log.debug(tradeType.toUpperCase(), amount, this.asset, '@', price, this.currency);
 
@@ -211,18 +211,21 @@ Trader.prototype.addOrder = function(tradeType, amount, price, callback) {
   this.kraken.api('AddOrder', {
     pair: this.pair,
     type: tradeType.toLowerCase(),
-    ordertype: 'limit',
+    //ordertype: 'limit',
+    ordertype: orderType.toLowerCase(),
     price: price,
+    price2: price2,
+    leverage: '2',
     volume: amount.toString()
   }, _.bind(set, this));
 };
 
-Trader.prototype.buy = function(amount, price, callback) {
-  this.addOrder('buy', amount, price, callback);
+Trader.prototype.buy = function(amount, orderType, price, price2, callback) {
+  this.addOrder('buy', amount, orderType, price, price2, callback);
 };
 
-Trader.prototype.sell = function(amount, price, callback) {
-  this.addOrder('sell', amount, price, callback);
+Trader.prototype.sell = function(amount, orderType, price, price2, callback) {
+  this.addOrder('sell', amount, orderType, price, price2, callback);
 };
 
 Trader.prototype.checkOrder = function(order, callback) {

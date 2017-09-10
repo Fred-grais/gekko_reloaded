@@ -125,6 +125,50 @@ Manager.prototype.getBalance = function(fund) {
   return this.getFund(fund).amount;
 };
 
+Manager.prototype.tradeV2 = function(what, data) {
+ if(what !== 'longEntry' && what !== 'shortEntry')
+    return;
+
+  this.action = what;
+
+  var act = function() {
+    var amount, price;
+
+    if(what === 'longEntry') {
+
+      amount = this.getBalance(this.currency) / this.ticker.ask;
+
+      // can we just create a MKT order?
+      if(this.directExchange)
+        price = false;
+      else
+        price = this.ticker.ask;
+
+      this.buy(amount, 'market', price);
+      this.sell(amount, 'stop-loss-profit', data.longEntryStopLossPrice, data.longEntryTakeProfitPrice)
+
+    } else if(what === 'shortEntry') {
+
+      amount = this.getBalance(this.asset);
+
+      // can we just create a MKT order?
+      if(this.directExchange)
+        price = false;
+      else
+        price = this.ticker.bid;
+
+      this.sell(amount, 'market', price);
+      this.buy(amount, 'stop-loss-profit', data.shortEntryStopLossPrice, data.shortEntryTakeProfitPrice)
+    }
+  };
+  async.series([
+    this.setTicker,
+    this.setPortfolio,
+    this.setFee
+  ], _.bind(act, this));
+
+};
+
 // This function makes sure order get to the exchange
 // and initiates follow up to make sure the orders will
 // get executed. This is the backbone of the portfolio
@@ -173,7 +217,6 @@ Manager.prototype.trade = function(what) {
     this.setPortfolio,
     this.setFee
   ], _.bind(act, this));
-
 };
 
 Manager.prototype.getMinimum = function(price) {
@@ -186,7 +229,7 @@ Manager.prototype.getMinimum = function(price) {
 // first do a quick check to see whether we can buy
 // the asset, if so BUY and keep track of the order
 // (amount is in asset quantity)
-Manager.prototype.buy = function(amount, price) {
+Manager.prototype.buy = function(amount, orderType, price, price2) {
 
   // sometimes cex.io specifies a price w/ > 8 decimals
   price *= 100000000;
@@ -227,13 +270,13 @@ Manager.prototype.buy = function(amount, price) {
     'at',
     this.exchange.name
   );
-  this.exchange.buy(amount, price, this.noteOrder);
+  this.exchange.buy(amount, orderType, price, price2, this.noteOrder);
 };
 
 // first do a quick check to see whether we can sell
 // the asset, if so SELL and keep track of the order
 // (amount is in asset quantity)
-Manager.prototype.sell = function(amount, price) {
+Manager.prototype.sell = function(amount, orderType, price, price2) {
   // sometimes cex.io specifies a price w/ > 8 decimals
   price *= 100000000;
   price = Math.ceil(price);
@@ -272,7 +315,7 @@ Manager.prototype.sell = function(amount, price) {
     'at',
     this.exchange.name
   );
-  this.exchange.sell(amount, price, this.noteOrder);
+  this.exchange.sell(amount, orderType, price, price2, this.noteOrder);
 };
 
 Manager.prototype.noteOrder = function(err, order) {

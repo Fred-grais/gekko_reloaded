@@ -269,7 +269,7 @@ Base.prototype.addIndicator = function(name, type, parameters) {
   this.indicators[name].input = Indicators[type].input;
 }
 
-Base.prototype.advice = function(newPosition) {
+Base.prototype.advice = function(newPosition, data) {
   var advice = 'soft';
   if(newPosition) {
     advice = newPosition;
@@ -280,6 +280,7 @@ Base.prototype.advice = function(newPosition) {
   _.defer(function() {
     this.emit('advice', {
       recommendation: advice,
+      data: data,
       portfolio: 1,
       candle
     });

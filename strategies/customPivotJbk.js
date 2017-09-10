@@ -46,15 +46,27 @@ strat.check = function() {
   // Only continue if we have a new update.
   var pivotHighLowData = this.indicators.pivotHighLow.result;
 
-  log.write('pivotHighLowData:');
-  log.write('\t', pivotHighLowData);
+  console.log('pivotHighLowData:');
+  console.log('\t', pivotHighLowData);
 
   if(pivotHighLowData.isPivotHigh) {
-    this.advice('long');
+    let pivotHighValue = pivotHighLowData.pivotHighValue;
+
+    console.log('*****Going Long******');
+    this.advice('long', {
+      longEntryStopLossPrice: pivotHighValue + pivotHighValue * this.stopLossPercents,
+      longEntryTakeProfitPrice: pivotHighValue + pivotHighValue * this.takeProfitPercents
+    });
   } 
 
   if(pivotHighLowData.isPivotLow) {
-    this.advice('short');
+    let pivotLowValue = pivotHighLowData.pivotLowValue;
+
+    console.log('******Going short*****')
+    this.advice('short', {
+      shortEntryStopLossPrice: pivotLowValue + pivotLowValue * this.stopLossPercents,
+      shortEntryTakeProfitPrice: pivotLowValue + pivotLowValue * this.takeProfitPercents
+    });
   }
 
 }
